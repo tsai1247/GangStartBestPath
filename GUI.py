@@ -172,16 +172,21 @@ class Window():
             label_cntnumber_each.grid(row=2, column=i+2, padx=5, )
             self.label_cntnumber_list.append(label_cntnumber_each)
 
+        # things to do at the end of init
+        self.calculate()
+
+
     def calculate(self):
         def BFS(row, column, hex):
             if row < 0 or row >= ROW or column < 0 or column >= COLUMN:
                 return 0
-            cur_hex = self.boardList[row][column].cget('bg')
-            if isTraveled[row][column] or cur_hex != hex:
+            cur_hex = board[row][column]
+            if isTraveled_to_Circle_Region[row][column] or cur_hex != hex:
                 return 0
             
             # self
-            isTraveled[row][column] = True
+            isTraveled_to_Circle_Region[row][column] = True
+            isTraveled_to_Check_Combo[row][column] = True
             cnt = 1
 
             # up
@@ -194,26 +199,39 @@ class Window():
             cnt += BFS(row, column+1, hex)
 
             return cnt
-
+        def is_3_inLine():
+            for row in range(ROW-2):
+                for column in range(COLUMN-2):
+                    if not isTraveled_to_Check_Combo[row][column]:
+                        continue
+                    if isTraveled_to_Check_Combo[row+1][column] and isTraveled_to_Check_Combo[row+2][column]:
+                        return True
+                    if isTraveled_to_Check_Combo[row][column+1] and isTraveled_to_Check_Combo[row][column+2]:
+                        return True
+            return False
+                        
         score = 0
         board = self.getBoard()
         combolist = [0 for _ in range(4)]
         cntnumlist = [0 for _ in range(4)]
         totalcombo = 0
         totalcntnum = 0
-        isTraveled = [[False for _ in range(COLUMN)] for __ in range(ROW)]
+        isTraveled_to_Circle_Region = [[False for _ in range(COLUMN)] for __ in range(ROW)]
         for i in range(ROW):
             for j in range(COLUMN):
-                hex = self.boardList[i][j].cget('bg')
-                num = BFS(i, j, hex)
-                if num != 0:
-                    index = BoardColor.GetIndex(hex)
+                name = board[i][j]
+                isTraveled_to_Check_Combo = [[False for _ in range(COLUMN)] for __ in range(ROW)]
+                num = BFS(i, j, name)
+                isvalidRegion = is_3_inLine()
+                if isvalidRegion:
+                    index = BoardColor.GetIndex(name)
                     combolist[index] += 1
                     cntnumlist[index] += num
 
         totalcombo = sum(combolist)
         totalcntnum = sum(cntnumlist)
 
+        self.label_totalscore.config(text=str(score))
         self.label_combo_total.config(text=str(totalcombo))
         self.label_cntnumber_total.config(text=str(totalcntnum))
         for i in range(len(self.label_combo_list)):
@@ -254,6 +272,7 @@ class Window():
         next_bg_hex = BoardColor.NextHex(cur_bg_hex)
 
         self.boardList[row][column].config(bg = next_bg_hex)
+        self.calculate()
 
     def show(self):
         self.window.mainloop()
