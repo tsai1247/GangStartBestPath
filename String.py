@@ -1,0 +1,1 @@
+str_window_title = "FLIP problem with GA"
