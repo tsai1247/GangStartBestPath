@@ -78,7 +78,6 @@ class Window():
                     self.frame_board, 
                     name=f'item {i} {j}', text=f'({i}, {j})', 
                     width=button_size, height=button_size//2,
-                    background=BoardColor.GetHex(random.randint(0, 3)),
                     font=font_board_index,
                     command=lambda row=i, column = j: self.change_item_color(row, column)
                 )
@@ -87,7 +86,7 @@ class Window():
 
                 curlist.append(item)
             self.boardList.append(curlist)
-        
+
         # mode
         self.label_mode_title = tk.Label(
             self.frame_setting, text='目前模式：', 
@@ -101,6 +100,14 @@ class Window():
             command = self.switch_mode
         )
         self.button_switchmode.grid(row=0, column=1)
+
+        # shuffle
+        self.button_shuffleboard = tk.Button(
+            self.frame_setting, text='隨機版面',
+            font=font_setting_button, 
+            command = self.shuffle
+        )
+        self.button_shuffleboard.grid(row=0, column=2, padx=5)
 
         # score
         ## 總分
@@ -173,8 +180,13 @@ class Window():
             self.label_cntnumber_list.append(label_cntnumber_each)
 
         # things to do at the end of init
+        self.shuffle()
+    
+    def shuffle(self):
+        for i in range(ROW):
+            for j in range(COLUMN):
+                self.boardList[i][j].config(background=BoardColor.GetHex(random.randint(0, 3)))
         self.calculate()
-
 
     def calculate(self):
         def BFS(row, column, hex):
