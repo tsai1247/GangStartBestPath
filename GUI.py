@@ -213,11 +213,16 @@ class Window():
             return cnt
         def is_3_inLine():
             for row in range(ROW-2):
-                for column in range(COLUMN-2):
+                for column in range(COLUMN):
                     if not isTraveled_to_Check_Combo[row][column]:
                         continue
                     if isTraveled_to_Check_Combo[row+1][column] and isTraveled_to_Check_Combo[row+2][column]:
                         return True
+                        
+            for row in range(ROW):
+                for column in range(COLUMN-2):
+                    if not isTraveled_to_Check_Combo[row][column]:
+                        continue
                     if isTraveled_to_Check_Combo[row][column+1] and isTraveled_to_Check_Combo[row][column+2]:
                         return True
             return False
@@ -243,14 +248,14 @@ class Window():
         totalcombo = sum(combolist)
         totalcntnum = sum(cntnumlist)
 
-        self.label_totalscore.config(text=str(score))
-        self.label_combo_total.config(text=str(totalcombo))
-        self.label_cntnumber_total.config(text=str(totalcntnum))
+        self.label_totalscore.config(text='{:2d}'.format(score))
+        self.label_combo_total.config(text='{:2d}'.format(totalcombo))
+        self.label_cntnumber_total.config(text='{:2d}'.format(totalcntnum))
         for i in range(len(self.label_combo_list)):
-            self.label_combo_list[i].config(text=str(combolist[i]))
+            self.label_combo_list[i].config(text='{:2d}'.format(combolist[i]))
             
         for i in range(len(self.label_cntnumber_list)):
-            self.label_cntnumber_list[i].config(text=str(cntnumlist[i]))
+            self.label_cntnumber_list[i].config(text='{:2d}'.format(cntnumlist[i]))
 
     def getBoard(self):
         ret = []
