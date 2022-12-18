@@ -1,4 +1,5 @@
 from typing import List
+from EA import getResult
 from Font import *
 from Constant import *
 import tkinter as tk
@@ -77,7 +78,7 @@ class Window():
                     name=f'item {i} {j}', text=f'({i}, {j})', 
                     width=button_size, height=button_size//2,
                     font=font_board_index,
-                    borderwidth=0,
+                    borderwidth=0.5,
                     command=lambda row=i, column = j: self.change_item_color(row, column)
                 )
 
@@ -206,15 +207,28 @@ class Window():
         self.shuffle()
     
     def train(self):
-        print(self.getBoard(origin=True))
-        ...
+        result = getResult(self.getBoard(origin=True))
+        for i in range(len(result)):
+            for j in range(len(result[i])):
+                if result[i][j]:
+                    self.select(i, j)
+                else:
+                    self.unselect(i, j)
+
+    def select(self, row, column):
+        self.boardList[row][column].config(borderwidth = 3.5)
+    def unselect(self, row, column):
+        self.boardList[row][column].config(borderwidth = 0.5)
+    def isselect(self, row, column):
+        return float(self.boardList[row][column].cget("borderwidth")) > 1
+
 
     def shuffle(self):
         for i in range(ROW):
             for j in range(COLUMN):
                 self.boardList[i][j].config(
                     background=BoardColor.GetHex(random.randint(0, 3)), 
-                    borderwidth=0
+                    borderwidth=0.5
                 )
         self.calculate()
 
@@ -268,7 +282,7 @@ class Window():
         for i in range(ROW):
             for j in range(COLUMN):
                 name = board[i][j]
-                if int(self.boardList[i][j].cget("borderwidth")) > 0:
+                if self.isselect(i, j):
                     path_cnt += 1
                 isTraveled_to_Check_Combo = [[False for _ in range(COLUMN)] for __ in range(ROW)]
                 num = BFS(i, j, name)
@@ -296,7 +310,7 @@ class Window():
             cur = []
             for j in range(COLUMN):
                 name = BoardColor.toName( self.boardList[i][j].cget('background') )
-                if origin and int(self.boardList[i][j].cget('borderwidth')) > 0:
+                if origin and self.isselect(i, j):
                     name = BoardColor.NextName(name, 2)
                 cur.append(name)
             ret.append(cur)
@@ -313,10 +327,10 @@ class Window():
 
     def change_item_color(self, row, column):
         if self.button_switchmode.cget('text') != self.modeList[0]: # 訓練。點擊後畫出路徑
-            if int(self.boardList[row][column].cget('borderwidth')) > 0:
-                self.boardList[row][column].config(borderwidth = 0)
+            if self.isselect(row, column):
+                self.unselect(row, column)
             else:
-                self.boardList[row][column].config(borderwidth = 3)
+                self.select(row, column)
 
             cur_bg_hex = self.boardList[row][column].cget('background')
             next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
