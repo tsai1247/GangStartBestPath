@@ -9,8 +9,8 @@ import random
 class BoardColor():
     color_to_hex = {
         'RED': '#d6456e', 
-        'BLUE': '#18c1e0', 
         'GREEN': '#92e69b', 
+        'BLUE': '#18c1e0', 
         'YELLOW': '#f0ea94', 
     }
     
@@ -27,13 +27,13 @@ class BoardColor():
         return BoardColor.hex_to_color[colorvalue]
     
     @staticmethod
-    def NextName(colorname):
-        index = BoardColor.name_list.index(colorname) + 1
+    def NextName(colorname, offset = 1):
+        index = BoardColor.name_list.index(colorname) + offset
         return BoardColor.name_list[index % len(BoardColor.name_list)]
         
     @staticmethod
-    def NextHex(colorname):
-        index = BoardColor.hex_list.index(colorname) + 1
+    def NextHex(colorname, offset = 1):
+        index = BoardColor.hex_list.index(colorname) + offset
         return BoardColor.hex_list[index % len(BoardColor.hex_list)]
 
     @staticmethod
@@ -52,7 +52,7 @@ class BoardColor():
             return BoardColor.hex_list.index(name)
 
 class Window():
-    modeList = ['排版', '訓練']
+    modeList = ['排版', '轉珠']
     def __init__(self) -> None:
         self.window = tk.Tk()
         self.window.title(str_window_title)
@@ -77,6 +77,7 @@ class Window():
                     name=f'item {i} {j}', text=f'({i}, {j})', 
                     width=button_size, height=button_size//2,
                     font=font_board_index,
+                    borderwidth=0,
                     command=lambda row=i, column = j: self.change_item_color(row, column)
                 )
 
@@ -106,6 +107,17 @@ class Window():
             command = self.shuffle
         )
         self.button_shuffleboard.grid(row=0, column=2, padx=5)
+
+        # train
+        self.button_train = tk.Button(
+            self.frame_setting, text='計算好的解',
+            font=font_setting_button,
+            state='disabled', 
+            command = self.train
+        )
+        self.button_train.grid(row=0, column=3, padx=5)
+
+
 
         # score
         ## 總分
@@ -140,7 +152,6 @@ class Window():
             font=font_setting_content
         )
         self.label_combo_total.grid(row=1, column=1, padx=10)
-        
 
         self.label_combo_list: List[tk.Label] = []
         for i in range(4):
@@ -177,13 +188,34 @@ class Window():
             label_cntnumber_each.grid(row=2, column=i+2, padx=5, )
             self.label_cntnumber_list.append(label_cntnumber_each)
 
+        self.label_length_title = tk.Label(
+            self.frame_result, text='路徑長度: ', 
+            font=font_setting_subtitle
+        )
+        self.label_length_title.grid(row=3, column=0, padx=10, sticky='W')
+        
+        self.label_length = tk.Label(
+            self.frame_result, text='0', 
+            font=font_setting_content
+        )
+        self.label_length.grid(row=3, column=1, padx=10)
+        
+
+
         # things to do at the end of init
         self.shuffle()
     
+    def train(self):
+        print(self.getBoard(origin=True))
+        ...
+
     def shuffle(self):
         for i in range(ROW):
             for j in range(COLUMN):
-                self.boardList[i][j].config(background=BoardColor.GetHex(random.randint(0, 3)))
+                self.boardList[i][j].config(
+                    background=BoardColor.GetHex(random.randint(0, 3)), 
+                    borderwidth=0
+                )
         self.calculate()
 
     def calculate(self):
@@ -232,9 +264,12 @@ class Window():
         totalcombo = 0
         totalcntnum = 0
         isTraveled_to_Circle_Region = [[False for _ in range(COLUMN)] for __ in range(ROW)]
+        path_cnt = 0
         for i in range(ROW):
             for j in range(COLUMN):
                 name = board[i][j]
+                if int(self.boardList[i][j].cget("borderwidth")) > 0:
+                    path_cnt += 1
                 isTraveled_to_Check_Combo = [[False for _ in range(COLUMN)] for __ in range(ROW)]
                 num = BFS(i, j, name)
                 isvalidRegion = is_3_inLine()
@@ -245,7 +280,7 @@ class Window():
 
         totalcombo = sum(combolist)
         totalcntnum = sum(cntnumlist)
-
+        self.label_length.config(text=f'{path_cnt}')
         self.label_totalscore.config(text='{:2d}'.format(score))
         self.label_combo_total.config(text='{:2d}'.format(totalcombo))
         self.label_cntnumber_total.config(text='{:2d}'.format(totalcntnum))
@@ -255,39 +290,46 @@ class Window():
         for i in range(len(self.label_cntnumber_list)):
             self.label_cntnumber_list[i].config(text='{:2d}'.format(cntnumlist[i]))
 
-    def getBoard(self):
+    def getBoard(self, origin = False):
         ret = []
         for i in range(ROW):
             cur = []
-            # if i == 0:
-            #     print('[ ', end='')
-            # else:
-            #     print('  ', end='')
             for j in range(COLUMN):
-
                 name = BoardColor.toName( self.boardList[i][j].cget('background') )
-                # print('{:6s}'.format(name), end=', ')
+                if origin and int(self.boardList[i][j].cget('borderwidth')) > 0:
+                    name = BoardColor.NextName(name, 2)
                 cur.append(name)
             ret.append(cur)
-            # if i == 4:
-            #     print(']')
-            # else:
-            #     print()
         return ret
 
     def switch_mode(self):
         txt = self.button_switchmode.cget('text')
         index = (self.modeList.index(txt) + 1) % 2
         self.button_switchmode.config(text=self.modeList[index])
+        if index == 0:
+            self.button_train.config(state='disabled')
+        else:
+            self.button_train.config(state='active')
 
     def change_item_color(self, row, column):
-        if self.button_switchmode.cget('text') != self.modeList[0]:
-            return
-        cur_bg_hex = self.boardList[row][column].cget('background')
-        next_bg_hex = BoardColor.NextHex(cur_bg_hex)
+        if self.button_switchmode.cget('text') != self.modeList[0]: # 訓練。點擊後畫出路徑
+            if int(self.boardList[row][column].cget('borderwidth')) > 0:
+                self.boardList[row][column].config(borderwidth = 0)
+            else:
+                self.boardList[row][column].config(borderwidth = 3)
 
-        self.boardList[row][column].config(bg = next_bg_hex)
-        self.calculate()
+            cur_bg_hex = self.boardList[row][column].cget('background')
+            next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
+
+            self.boardList[row][column].config(bg = next_bg_hex)
+            self.calculate()
+            
+        else:                                                       # 排版。點擊後改變顏色
+            cur_bg_hex = self.boardList[row][column].cget('background')
+            next_bg_hex = BoardColor.NextHex(cur_bg_hex)
+
+            self.boardList[row][column].config(bg = next_bg_hex)
+            self.calculate()
 
     def show(self):
         self.window.mainloop()
