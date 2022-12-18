@@ -14,36 +14,37 @@ class Direction():
         return random.randint(0, 3)
 
 class Point():
-    def __init__(self, X = 0, Y = 0, row = ROW, column = COLUMN) -> None:
-        self.X = X
-        self.Y = Y
+    def __init__(self, row = 0, column = 0, maxrow = ROW, maxcolumn = COLUMN) -> None:
         self.row = row
         self.column = column
+        self.maxrow = maxrow
+        self.maxcolumn = maxcolumn
 
     @staticmethod
-    def random(row = ROW, column = COLUMN):
-        return Point(random.randint(0, column-1), random.randint(0, row-1), row, column)
+    def random(maxrow = ROW, maxcolumn = COLUMN):
+        return Point(random.randint(0, maxrow-1), random.randint(0, maxcolumn-1), maxrow, maxcolumn)
 
     def walk(self, direction):
         nextPoint = copy(self)
 
         match direction:
             case Direction.UP:
-                if nextPoint.Y == 0:
+                if nextPoint.row == 0:
                     raise Exception("Unreachable road")
-                nextPoint.Y -= 1
+                nextPoint.row -= 1
             case Direction.DOWN:
-                if nextPoint.Y +1 == nextPoint.row:
+                if nextPoint.row +1 == nextPoint.maxrow:
                     raise Exception("Unreachable road")
-                nextPoint.Y += 1
+                nextPoint.row += 1
+            
             case Direction.LEFT:
-                if nextPoint.X == 0:
+                if nextPoint.column == 0:
                     raise Exception("Unreachable road")
-                nextPoint.X -= 1
+                nextPoint.column -= 1
             case Direction.RIGHT:
-                if nextPoint.X +1 == nextPoint.column:
+                if nextPoint.column +1 == nextPoint.maxcolumn:
                     raise Exception("Unreachable road")
-                nextPoint.X += 1
+                nextPoint.column += 1
         return nextPoint
 
     def randomwalk(self):
@@ -58,7 +59,7 @@ class Point():
             raise Exception("no direction available.")
 
     def tostring(self):
-        return f'({self.X}, {self.Y})'
+        return f'({self.row}, {self.column})'
 
 class Board():
     def __init__(self, board: List[List[bool]]) -> None:
@@ -73,17 +74,19 @@ class Board():
         return Board([[False for i in range(column)] for j in range(row)])
 
     def isPointinBoard(self, point: Point):
-        x, y = point.X, point.Y
+        x, y = point.row, point.column
         row, column = self.row, self.column
-        return 0 <= x and x < column and 0 <= y and y < row
+        return 0 <= x and x < row and 0 <= y and y < column
 
     def set(self, point: Point, value = True):
         if self.isPointinBoard(point):
-            self.board[point.Y][point.X] = value
+            self.board[point.row][point.column] = value
         else:
             raise Exception(f"point {point.tostring()} is not in board")
+    
     def get(self, point: Point):
-        return self.board[point.Y][point.X]
+        return self.board[point.row][point.column]
+
     def isDeadEnd(self, point: Point):
         for i in range(4):
             try:
@@ -91,7 +94,6 @@ class Board():
                     return False
             except:
                 continue
-
         return True
 
     def show(self, path: List[Point]):
@@ -145,7 +147,7 @@ class Path():
             a, b = min(a, b), max(a, b)
             
             for i in range(a, b+1):
-                path.append(Point(targetcol, i))
+                path.append(Point(i, targetcol))
                 
         else:                       # ─
             targetrow = random.randint(0, row-1)
@@ -155,12 +157,11 @@ class Path():
             a, b = min(a, b), max(a, b)
             
             for i in range(a, b+1):
-                path.append(Point(i, targetrow))
+                path.append(Point(targetrow, i))
 
         return Path(path)
 
     def show(self):
         return self.board.show(self.path)
-
-a = Path.random().show()
-print(a)
+        
+# a = Path.random().show()
