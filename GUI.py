@@ -1,12 +1,10 @@
 from typing import List
 from Font import *
-from String import *
+from Constant import *
 import tkinter as tk
 import tkinter.font as tkFont
 import random
 
-ROW = 5
-COLUMN = 6
 
 class BoardColor():
     color_to_hex = {
