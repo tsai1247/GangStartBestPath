@@ -94,62 +94,73 @@ class Board():
 
         return True
 
-    def show(self):
-        ret = '-'* (len(self.board[0]) + 2) + '\n'
-        for row in self.board:
-            ret += '|'
-            for e in row:
-                ret += '■' if e else '□'
+    def show(self, path: List[Point]):
+        if path is None:
+            ret = '-'* (len(self.board[0]) + 2) + '\n'
+            for row in self.board:
+                ret += '|'
+                for e in row:
+                    ret += '■' if e else '□'
 
-            ret += '|\n'
-        
-        ret += '-'* (len(self.board[0]) + 2)
-        return ret
+                ret += '|\n'
             
+            ret += '-'* (len(self.board[0]) + 2)
+            return ret
+        else:
+            board = copy(self)
+            for i in range(len(path)):
+                board.set(path[i], i)
+            
+            ret = '-'* (len(board.board[0]) + 2) + '\n'
+            for row in board.board:
+                ret += '|'
+                for e in row:
+                    if type(e) is int:
+                        ret += str(e)
+                    else:
+                        ret += '■' if e else '□'
+
+                ret += '|\n'
+            
+            ret += '-'* (len(board.board[0]) + 2)
+            return ret
     
 class Path():
-    def __init__(self, value: Tuple[List[List[bool]], List[Point], Board] = None) -> None:
-        if type(value) is List[List[bool]]:
-            self.path = None
-            self.length = None
-            self.board = Board(value)
-            logging.warning("The Path lose its direction")
-        elif type(value) is Board:
-            self.path = None
-            self.length = None
-            self.board: Board = value
-            logging.warning("The Path lose its direction")
-
-        elif type(value) is List[Point]:
-            self.path: List[Point] = value
-            self.length = len(self.path)
-            self.board = Board.Empty()
-            for point in self.path:
-                self.board.set(point)
-        else:
-            raise Exception("Wrong value type")
-
+    def __init__(self, path: List[Point]) -> None:
+        self.path: List[Point] = path
+        self.length = len(self.path)
+        self.board = Board.Empty()
+        for point in self.path:
+            self.board.set(point)
 
     @staticmethod
-    def random(length, row = ROW, column = COLUMN):
-        if length > row*column:
-            raise Exception("Path length is too large")
-        board = Board.Empty(row, column)
+    def random(row = ROW, column = COLUMN):
+        path: List[Point] = []
 
-        startpoint = Point.random()
-        board.set(startpoint)
-        generated_length = 1
+        if random.random() > 0.5:   # |
+            targetcol = random.randint(0, column-1)
+            a, b = random.randint(0, row-1), random.randint(0, row-1)
+            while a == b:
+                b = random.randint(0, row-1)
+            a, b = min(a, b), max(a, b)
+            
+            for i in range(a, b+1):
+                path.append(Point(targetcol, i))
+                
+        else:                       # ─
+            targetrow = random.randint(0, row-1)
+            a, b = random.randint(0, column-1), random.randint(0, column-1)
+            while a == b:
+                b = random.randint(0, column-1)
+            a, b = min(a, b), max(a, b)
+            
+            for i in range(a, b+1):
+                path.append(Point(i, targetrow))
 
-        while generated_length != length:
-            newpoint = Point.random()
-            if not board.get(newpoint):
-                board.set(newpoint)
-                generated_length += 1
-        return Path(board)
-        
+        return Path(path)
 
     def show(self):
-        if self.path is None:
-            return self.board.show()
+        return self.board.show(self.path)
 
-print(Path.random(6).show())
+a = Path.random().show()
+print(a)
