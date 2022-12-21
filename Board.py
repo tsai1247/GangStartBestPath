@@ -4,6 +4,51 @@ from copy import deepcopy as copy
 from Constant import *
 from typing import List, Tuple
 
+class BoardColor():
+    color_to_hex = {
+        'RED': '#d6456e', 
+        'GREEN': '#92e69b', 
+        'BLUE': '#18c1e0', 
+        'YELLOW': '#f0ea94', 
+    }
+    
+    name_list = list(color_to_hex.keys())
+    hex_list = list(color_to_hex.values())
+    hex_to_color = {v: k for k, v in color_to_hex.items()}
+    
+    @staticmethod
+    def toHex(colorname):
+        return BoardColor.color_to_hex[colorname]
+        
+    @staticmethod
+    def toName(colorvalue):
+        return BoardColor.hex_to_color[colorvalue]
+    
+    @staticmethod
+    def NextName(colorname, offset = 1):
+        index = BoardColor.name_list.index(colorname) + offset
+        return BoardColor.name_list[index % len(BoardColor.name_list)]
+        
+    @staticmethod
+    def NextHex(colorname, offset = 1):
+        index = BoardColor.hex_list.index(colorname) + offset
+        return BoardColor.hex_list[index % len(BoardColor.hex_list)]
+
+    @staticmethod
+    def GetName(index):
+        return BoardColor.name_list[index]
+        
+    @staticmethod
+    def GetHex(index):
+        return BoardColor.hex_list[index]
+
+    @staticmethod
+    def GetIndex(name):
+        try:
+            return BoardColor.name_list.index(name)
+        except ValueError:
+            return BoardColor.hex_list.index(name)
+
 class Direction():
     UP = 0
     DOWN = 1
@@ -130,10 +175,11 @@ class Board():
 class Path():
     def __init__(self, path: List[Point]) -> None:
         self.path: List[Point] = path
-        self.length = len(self.path)
         self.board = Board.Empty()
         for point in self.path:
             self.board.set(point)
+    def length(self):
+        return len(self.path)
 
     @staticmethod
     def random(row = ROW, column = COLUMN):
@@ -148,7 +194,7 @@ class Path():
             
             for i in range(a, b+1):
                 path.append(Point(i, targetcol))
-                
+
         else:                       # ─
             targetrow = random.randint(0, row-1)
             a, b = random.randint(0, column-1), random.randint(0, column-1)
@@ -160,7 +206,13 @@ class Path():
                 path.append(Point(targetrow, i))
 
         return Path(path)
+    
+    def isPointOnPath(self, point: Point):
+        return self.board.get(point)
 
+    def getBoard(self):
+        return [[self.board.get(Point(i, j)) for j in range(self.board.column)] for i in range(self.board.row)]
+    
     def show(self):
         return self.board.show(self.path)
         
