@@ -1,5 +1,5 @@
 from typing import List
-from EA import getPathLength, getCombo, getMatchedNum, getResult
+from EA3 import getPathLength, getCombo, getMatchedNum, getResult
 from Font import *
 from Constant import *
 import tkinter as tk
@@ -158,6 +158,7 @@ class Window():
         )
         self.label_length.grid(row=3, column=1, padx=10)
 
+        # iter
         self.label_iter_title = tk.Label(
             self.frame_result, text='迭代次數: ', 
             font=font_setting_subtitle
@@ -173,7 +174,7 @@ class Window():
         )
         self.label_iter.grid(row=4, column=2, columnspan=2, padx=10)
 
-        self.str_popu = tk.IntVar()
+        # popu
         self.label_popu_title = tk.Label(
             self.frame_result, text='Population size: ', 
             font=font_setting_subtitle
@@ -189,13 +190,32 @@ class Window():
         )
         self.label_popu.grid(row=5, column=2, columnspan=2, padx=10)
 
+        self.label_target_score_title = tk.Label(
+            self.frame_result, text='目標分數: ', 
+            font=font_setting_subtitle
+        )
+        self.label_target_score_title.grid(row=6, column=0, padx=10, columnspan=2, sticky='W')
+        
+        self.str_target_score = tk.IntVar()
+        self.str_target_score.set(15)
+        self.label_target_score = tk.Entry(
+            self.frame_result, textvariable=self.str_target_score,
+            width=6,
+            font=font_setting_content
+        )
+        self.label_target_score.grid(row=6, column=2, columnspan=2, padx=10)
+
 
 
         # things to do at the end of init
         self.shuffle()
     
     def train(self):
-        result = getResult(self.getBoard(origin=True), self.str_iter.get(), self.str_popu.get())
+        for i in range(ROW):
+            for j in range(COLUMN):
+                self.unselect(i, j)
+
+        result = getResult(self.getBoard(origin=True), self.str_iter.get(), self.str_popu.get(), self.str_target_score.get())
         for i in range(len(result)):
             for j in range(len(result[i])):
                 if result[i][j]:

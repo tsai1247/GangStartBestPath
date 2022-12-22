@@ -64,7 +64,9 @@ class Point():
         self.column = column
         self.maxrow = maxrow
         self.maxcolumn = maxcolumn
-
+    def __lt__(self, other):
+        return self.row < other.row or self.row == other.row and self.column < other.column
+        
     @staticmethod
     def random(maxrow = ROW, maxcolumn = COLUMN):
         return Point(random.randint(0, maxrow-1), random.randint(0, maxcolumn-1), maxrow, maxcolumn)
@@ -178,6 +180,18 @@ class Path():
         self.board = Board.Empty()
         for point in self.path:
             self.board.set(point)
+
+    def __lt__(self, other):
+        for i in range(len(self.path)):
+            if i >= len(other.path):
+                return False
+            if self.path[i] < other.path[i]:
+                return True
+            elif other.path[i] < self.path[i]:
+                return False
+        return False
+
+
     def length(self):
         return len(self.path)
 

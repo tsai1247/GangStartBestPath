@@ -126,15 +126,14 @@ def getMatchedNum(board: list[list[str]], selected: list[list[bool]] = None):
 BOARD: list[list[str]]
 # about EA
 
-
-
 def f(selected: Path):
     global BOARD
     
     length = getPathLength(selected.getBoard())
     combo = getCombo(BOARD, selected.getBoard())
     num = getMatchedNum(BOARD, selected.getBoard())
-    return sum(num)*10000 + sum(combo)* 100 + length
+    # return sum(num)*100 + sum(combo)* 7 + length * 2
+    return num[2] * 100 + sum(combo)
 
 def getIndividual():
     ret = Path.random()
@@ -152,42 +151,72 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
 
         return i
     def mutation(index):
-        selected_parent = copy(parent[index])
+        selected_parent: list[Path] = []
+        for i in range(4):
+            selected_parent.append(copy(parent[index]))
+        returnList: list[Path] = []
         
         mutationtype = random.random()
-        if mutationtype < 0.3:
-            startP = selected_parent.path[0]
-            newstartP = startP.randomwalk()
-            if not selected_parent.isPointOnPath(newstartP):
-                selected_parent.board.set(newstartP)
-                selected_parent.path.insert(0, newstartP)
+        if mutationtype < 0.2:
+            if parent[index].length() < 15:
+                for i in range(4):
+                    startP = selected_parent[i].path[0]
+                    try:
+                        newstartP = startP.walk(i)
+                    except:
+                        continue
+                    if not selected_parent[i].isPointOnPath(newstartP):
+                        selected_parent[i].board.set(newstartP)
+                        selected_parent[i].path.insert(0, newstartP)
+                        returnList.append(selected_parent[i])
 
-        elif mutationtype < 0.6:
-            endP = selected_parent.path[-1]
-            newEndP = endP.randomwalk()
-            if not selected_parent.isPointOnPath(newEndP):
-                selected_parent.board.set(newEndP)
-                selected_parent.path.append(newEndP)
+            
+        elif mutationtype < 0.5:
+            back_parent: Path = copy(parent[index])
+            if back_parent.length() > 1:
+                startP = back_parent.path[0]
+                back_parent.board.set(startP, False)
+                back_parent.path.pop(0)
+                returnList.append(back_parent)
+        elif mutationtype < 0.7:
+            if parent[index].length() < 15:
+                for i in range(4):
+                    endP = selected_parent[i].path[-1]
+                    try:
+                        newEndP = endP.walk(i)
+                    except:
+                        continue
+                    if not selected_parent[i].isPointOnPath(newEndP):
+                        selected_parent[i].board.set(newEndP)
+                        selected_parent[i].path.append(newEndP)
+                        returnList.append(selected_parent[i])
+        else:
+            back_parent: Path = copy(parent[index])
+            if back_parent.length() > 1:
+                endP = back_parent.path[-1]
+                back_parent.board.set(endP, False)
+                back_parent.path.pop()
+                returnList.append(back_parent)
 
-        elif mutationtype < 0.8:
-            if selected_parent.length() > 1:
-                startP = selected_parent.path[0]
-                newstartP = selected_parent.path[1]
-                selected_parent.board.set(startP, False)
-                selected_parent.path.pop(0)
+        return returnList
+    def getBest(individuals, fitnesses, probabilities = [80, 60, 20, 6, 2]):
+        assert(len(individuals) == len(fitnesses))
+        compete = [(fitnesses[i], individuals[i]) for i in range(len(individuals))]
+        sorted(compete, reverse = True)
+        probabilities = probabilities[:len(individuals)]
+        target = random.randint(0, sum(probabilities))
+        score = 0
+        for i in range(population_size):
+            score += probabilities[i]
+            if score >= target:
+                return individuals[i], fitnesses[i]
+        return individuals[i], fitnesses[i]
 
-        elif mutationtype < 1:
-            if selected_parent.length() > 1:
-                endP = selected_parent.path[-1]
-                newendP = selected_parent.path[-2]
-                selected_parent.board.set(endP, False)
-                selected_parent.path.pop()
 
-        return selected_parent
 
     def recombination():
         selected_parents = copy([parent[parent_selection()], parent[parent_selection()]])
-
+        
         # hybrid
         # pos1 = random.randint(0, chromosome_size)
 
@@ -206,6 +235,7 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
 
     global BOARD
     BOARD = board
+    
     goal_fitness = 28
     mutation_probability = 0.5
 
@@ -226,6 +256,7 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
     while generation_count != termination_criterion:
         if generation_count % 100 == 0:
             print(generation_count, parent_fitness, [i.length() for i in parent])
+            
         # record_best_fitness_value()
         generation_count += 1
 
@@ -236,28 +267,32 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
         # mutation
         for i in range(population_size):
             children.append(mutation(i))
-            children_fitness.append(f(children[i]))
+            fitnessList = []
+            for child in children[i]:
+                fitnessList.append(f(child))
+            children_fitness.append(fitnessList)
 
         # children grow up
         base = 1.6
         for i in range(len(parent)):
-            chil = children_fitness[i]
-            pare = parent_fitness[i]
-            if random.random() < pow(base, chil) / (pow(base, chil) + pow(base, pare)):
-                parent[i] = children[i]
-                parent_fitness[i] = children_fitness[i]
-        # parent[0:population_size] = children[0:population_size]
-        # parent_fitness[0:population_size] = children_fitness[0:population_size]
+            competeList = children[i] + [parent[i]]
+            competefitnessList = children_fitness[i] + [parent_fitness[i]]
+            bestone, bestonefitness = getBest(competeList, competefitnessList)
+
+            parent[i] = bestone
+            parent_fitness[i] = bestonefitness
+
         children = []
         children_fitness = []
 
         for i in range(len(parent)):
             if parent_fitness[i] >= termination_score:
+                print('\tnew score:', parent_fitness[i], 'iter', generation_count)
                 return parent[i].getBoard()
             if parent_fitness[i] > current_max_score:
                 current_max_score = parent_fitness[i]
                 bestofall = parent[i]
-                print('\tnew score:', current_max_score)
+                print('\tnew score:', current_max_score, 'iter', generation_count)
     if generation_count % 100 == 0:
         print(generation_count, parent_fitness)
     bestindex = 0

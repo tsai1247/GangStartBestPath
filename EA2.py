@@ -152,42 +152,71 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
 
         return i
     def mutation(index):
-        selected_parent = copy(parent[index])
+        selected_parent: list[Path] = []
+        for i in range(4):
+            selected_parent.append(copy(parent[index]))
+        returnList: list[Path] = []
         
         mutationtype = random.random()
-        if mutationtype < 0.3:
-            startP = selected_parent.path[0]
-            newstartP = startP.randomwalk()
-            if not selected_parent.isPointOnPath(newstartP):
-                selected_parent.board.set(newstartP)
-                selected_parent.path.insert(0, newstartP)
+        if mutationtype < 0.5:
+            if parent[index].length() < 15:
+                for i in range(4):
+                    startP = selected_parent[i].path[0]
+                    try:
+                        newstartP = startP.walk(i)
+                    except:
+                        continue
+                    if not selected_parent[i].isPointOnPath(newstartP):
+                        selected_parent[i].board.set(newstartP)
+                        selected_parent[i].path.insert(0, newstartP)
+                        returnList.append(selected_parent[i])
 
-        elif mutationtype < 0.6:
-            endP = selected_parent.path[-1]
-            newEndP = endP.randomwalk()
-            if not selected_parent.isPointOnPath(newEndP):
-                selected_parent.board.set(newEndP)
-                selected_parent.path.append(newEndP)
+            back_parent: Path = copy(parent[index])
+            if back_parent.length() > 1:
+                startP = back_parent.path[0]
+                back_parent.board.set(startP, False)
+                back_parent.path.pop(0)
+                returnList.append(back_parent)
 
-        elif mutationtype < 0.8:
-            if selected_parent.length() > 1:
-                startP = selected_parent.path[0]
-                newstartP = selected_parent.path[1]
-                selected_parent.board.set(startP, False)
-                selected_parent.path.pop(0)
+        else:
+            if parent[index].length() < 15:
+                for i in range(4):
+                    endP = selected_parent[i].path[-1]
+                    try:
+                        newEndP = endP.walk(i)
+                    except:
+                        continue
+                    if not selected_parent[i].isPointOnPath(newEndP):
+                        selected_parent[i].board.set(newEndP)
+                        selected_parent[i].path.append(newEndP)
+                        returnList.append(selected_parent[i])
 
-        elif mutationtype < 1:
-            if selected_parent.length() > 1:
-                endP = selected_parent.path[-1]
-                newendP = selected_parent.path[-2]
-                selected_parent.board.set(endP, False)
-                selected_parent.path.pop()
+            back_parent: Path = copy(parent[index])
+            if back_parent.length() > 1:
+                endP = back_parent.path[-1]
+                back_parent.board.set(endP, False)
+                back_parent.path.pop()
+                returnList.append(back_parent)
 
-        return selected_parent
+        return returnList
+    def getBest(individuals, fitnesses, probabilities = [80, 60, 20, 6, 2]):
+        assert(len(individuals) == len(fitnesses))
+        compete = [(fitnesses[i], individuals[i]) for i in range(len(individuals))]
+        sorted(compete, reverse = True)
+        probabilities = probabilities[:len(individuals)]
+        target = random.randint(0, sum(probabilities))
+        score = 0
+        for i in range(population_size):
+            score += probabilities[i]
+            if score >= target:
+                return individuals[i], fitnesses[i]
+        return individuals[i], fitnesses[i]
+
+
 
     def recombination():
         selected_parents = copy([parent[parent_selection()], parent[parent_selection()]])
-
+        
         # hybrid
         # pos1 = random.randint(0, chromosome_size)
 
@@ -236,18 +265,21 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
         # mutation
         for i in range(population_size):
             children.append(mutation(i))
-            children_fitness.append(f(children[i]))
+            fitnessList = []
+            for child in children[i]:
+                fitnessList.append(f(child))
+            children_fitness.append(fitnessList)
 
         # children grow up
         base = 1.6
         for i in range(len(parent)):
-            chil = children_fitness[i]
-            pare = parent_fitness[i]
-            if random.random() < pow(base, chil) / (pow(base, chil) + pow(base, pare)):
-                parent[i] = children[i]
-                parent_fitness[i] = children_fitness[i]
-        # parent[0:population_size] = children[0:population_size]
-        # parent_fitness[0:population_size] = children_fitness[0:population_size]
+            competeList = children[i] + [parent[i]]
+            competefitnessList = children_fitness[i] + [parent_fitness[i]]
+            bestone, bestonefitness = getBest(competeList, competefitnessList)
+
+            parent[i] = bestone
+            parent_fitness[i] = bestonefitness
+
         children = []
         children_fitness = []
 
