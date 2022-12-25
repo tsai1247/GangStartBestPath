@@ -1,3 +1,4 @@
+from datetime import datetime
 from Constant import *
 from Board import *
 
@@ -132,14 +133,14 @@ def f(selected: Path):
     length = getPathLength(selected.getBoard())
     combo = getCombo(BOARD, selected.getBoard())
     num = getMatchedNum(BOARD, selected.getBoard())
-    # return sum(num)*100 + sum(combo)* 7 + length * 2
-    return num[2] * 100 + sum(combo)
+    return sum(num)*100 + sum(combo)* 7 + length * 2
+    # return num[2] * 100 + sum(combo)
 
 def getIndividual():
     ret = Path.random()
     return ret
 
-def getResult(board: list[list[str]], termination_criterion = 3000, population_size = 5, termination_score = 15) -> list[list[bool]]:
+def getResult(board: list[list[str]], termination_criterion = 3000, timeout = 100, termination_score = 15) -> list[list[bool]]:
     def parent_selection():
         total_score = sum(parent_fitness)
         num = random.randint(0, total_score)
@@ -235,7 +236,7 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
 
     global BOARD
     BOARD = board
-    
+    population_size = 3
     goal_fitness = 28
     mutation_probability = 0.5
 
@@ -253,10 +254,11 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
     generation_count = 0
     current_max_score = -1
     record_best_fitness_value_list = []
+    starttime = datetime.now()
     while generation_count != termination_criterion:
         if generation_count % 100 == 0:
             print(generation_count, parent_fitness, [i.length() for i in parent])
-            
+        
         # record_best_fitness_value()
         generation_count += 1
 
@@ -289,10 +291,18 @@ def getResult(board: list[list[str]], termination_criterion = 3000, population_s
             if parent_fitness[i] >= termination_score:
                 print('\tnew score:', parent_fitness[i], 'iter', generation_count)
                 return parent[i].getBoard()
+                
             if parent_fitness[i] > current_max_score:
                 current_max_score = parent_fitness[i]
                 bestofall = parent[i]
                 print('\tnew score:', current_max_score, 'iter', generation_count)
+        
+        deltatime = datetime.now() - starttime
+        time_cnt = deltatime.microseconds / 1000 + deltatime.seconds*1000
+        if time_cnt > timeout:
+            print('get timeout')
+            break
+
     if generation_count % 100 == 0:
         print(generation_count, parent_fitness)
     bestindex = 0

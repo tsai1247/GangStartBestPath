@@ -3,7 +3,6 @@ from EA3 import getPathLength, getCombo, getMatchedNum, getResult
 from Font import *
 from Constant import *
 import tkinter as tk
-import tkinter.font as tkFont
 import random
 from Board import BoardColor
 
@@ -13,24 +12,32 @@ class Window():
     def __init__(self) -> None:
         self.window = tk.Tk()
         self.window.title(str_window_title)
+        self.window.attributes('-topmost', True)
 
         self.frame_setting = tk.Frame(self.window)
         self.frame_setting.grid(row=0, column=0, sticky='W', padx = 10, pady=10)
 
-        self.frame_result = tk.Frame(self.window)
-        self.frame_result.grid(row=1, column=0, sticky='W', padx = 10, pady=10)
+        self.frame_origin_board = tk.Frame(self.window)
+        self.frame_origin_board.grid(row=1, column=0, padx=10, pady=10)
 
-        self.frame_board = tk.Frame(self.window)
-        self.frame_board.grid(row=2, column=0, padx=10, pady=10)
+        self.label_arrow = tk.Label(self.window, text='=>', font=font_setting_title)
+        self.label_arrow.grid(row=1, column=1, padx=5, pady=5, )
+
+        self.frame_result = tk.Frame(self.window)
+        self.frame_result.grid(row=0, column=2, sticky='W', padx = 10, pady=10)
+        
+        self.frame_result_board = tk.Frame(self.window)
+        self.frame_result_board.grid(row=1, column=2, sticky='W', padx = 10, pady=10)
+
                 
-        # set board
+        # origin board
         self.boardList: List[List[tk.Button]] = []
         button_size = 7
         for i in range(ROW):
             curlist = []
             for j in range(COLUMN):
                 item = tk.Button(
-                    self.frame_board, 
+                    self.frame_origin_board, 
                     name=f'item {i} {j}', text=f'({i}, {j})', 
                     width=button_size, height=button_size//2,
                     font=font_board_index,
@@ -42,6 +49,26 @@ class Window():
 
                 curlist.append(item)
             self.boardList.append(curlist)
+
+        # result board
+        self.resultboardList: List[List[tk.Button]] = []
+        button_size = 7
+        for i in range(ROW):
+            curlist = []
+            for j in range(COLUMN):
+                item = tk.Button(
+                    self.frame_result_board, 
+                    name=f'item {i} {j}', text=f'({i}, {j})', 
+                    width=button_size, height=button_size//2,
+                    font=font_board_index,
+                    borderwidth=0.5,
+                    command=lambda row=i, column = j: self.change_item_color(row, column)
+                )
+
+                item.grid(row=i, column=j)
+
+                curlist.append(item)
+            self.resultboardList.append(curlist)
 
         # mode
         self.label_mode_title = tk.Label(
@@ -160,7 +187,7 @@ class Window():
 
         # iter
         self.label_iter_title = tk.Label(
-            self.frame_result, text='迭代次數: ', 
+            self.frame_setting, text='迭代次數: ', 
             font=font_setting_subtitle
         )
         self.label_iter_title.grid(row=4, column=0, padx=10, columnspan=2, sticky='W')
@@ -168,38 +195,38 @@ class Window():
         self.str_iter = tk.IntVar()
         self.str_iter.set(3000)
         self.label_iter = tk.Entry(
-            self.frame_result, textvariable=self.str_iter,
+            self.frame_setting, textvariable=self.str_iter,
             width=6,
             font=font_setting_content
         )
         self.label_iter.grid(row=4, column=2, columnspan=2, padx=10)
 
         # popu
-        self.label_popu_title = tk.Label(
-            self.frame_result, text='Population size: ', 
+        self.label_timeout_title = tk.Label(
+            self.frame_setting, text='time out: ', 
             font=font_setting_subtitle
         )
-        self.label_popu_title.grid(row=5, column=0, padx=10, columnspan=2, sticky='W')
+        self.label_timeout_title.grid(row=5, column=0, padx=10, columnspan=2, sticky='W')
         
-        self.str_popu = tk.IntVar()
-        self.str_popu.set(3)
+        self.str_timeout = tk.IntVar()
+        self.str_timeout.set(1000)
         self.label_popu = tk.Entry(
-            self.frame_result, textvariable=self.str_popu,
+            self.frame_setting, textvariable=self.str_timeout,
             width=6,
             font=font_setting_content
         )
         self.label_popu.grid(row=5, column=2, columnspan=2, padx=10)
 
         self.label_target_score_title = tk.Label(
-            self.frame_result, text='目標分數: ', 
+            self.frame_setting, text='目標分數: ', 
             font=font_setting_subtitle
         )
         self.label_target_score_title.grid(row=6, column=0, padx=10, columnspan=2, sticky='W')
         
         self.str_target_score = tk.IntVar()
-        self.str_target_score.set(15)
+        self.str_target_score.set(2000)
         self.label_target_score = tk.Entry(
-            self.frame_result, textvariable=self.str_target_score,
+            self.frame_setting, textvariable=self.str_target_score,
             width=6,
             font=font_setting_content
         )
@@ -215,7 +242,7 @@ class Window():
             for j in range(COLUMN):
                 self.unselect(i, j)
 
-        result = getResult(self.getBoard(origin=True), self.str_iter.get(), self.str_popu.get(), self.str_target_score.get())
+        result = getResult(self.getBoard(origin=True), self.str_iter.get(), self.str_timeout.get(), self.str_target_score.get())
         for i in range(len(result)):
             for j in range(len(result[i])):
                 if result[i][j]:
@@ -228,29 +255,35 @@ class Window():
         if self.isselect(row, column):
             return
             
-        self.boardList[row][column].config(borderwidth = 3.5, foreground='red')
-        cur_bg_hex = self.boardList[row][column].cget('background')
+        self.resultboardList[row][column].config(borderwidth = 3.5, foreground='red')
+        cur_bg_hex = self.resultboardList[row][column].cget('background')
         next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
-        self.boardList[row][column].config(bg = next_bg_hex)
+        self.resultboardList[row][column].config(bg = next_bg_hex)
 
     def unselect(self, row, column):
         if not self.isselect(row, column):
             return
 
-        self.boardList[row][column].config(borderwidth = 0.5, foreground='black')
-        cur_bg_hex = self.boardList[row][column].cget('background')
+        self.resultboardList[row][column].config(borderwidth = 0.5, foreground='black')
+        cur_bg_hex = self.resultboardList[row][column].cget('background')
         next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
-        self.boardList[row][column].config(bg = next_bg_hex)
+        self.resultboardList[row][column].config(bg = next_bg_hex)
 
     def isselect(self, row, column):
-        return float(self.boardList[row][column].cget("borderwidth")) > 1
+        return float(self.resultboardList[row][column].cget("borderwidth")) > 1
 
 
     def shuffle(self):
         for i in range(ROW):
             for j in range(COLUMN):
+                color = BoardColor.GetHex(random.randint(0, 3))
                 self.boardList[i][j].config(
-                    background=BoardColor.GetHex(random.randint(0, 3)), 
+                    background=color, 
+                    foreground='black',
+                    borderwidth=0.5
+                )
+                self.resultboardList[i][j].config(
+                    background=color, 
                     foreground='black',
                     borderwidth=0.5
                 )
@@ -301,20 +334,14 @@ class Window():
             self.button_train.config(state='active')
 
     def change_item_color(self, row, column):
-        if self.button_switchmode.cget('text') != self.modeList[0]: # 訓練。點擊後畫出路徑
-            if self.isselect(row, column):
-                self.unselect(row, column)
-            else:
-                self.select(row, column)
-
-            self.calculate()
-            
-        else:                                                       # 排版。點擊後改變顏色
+        if self.button_switchmode.cget('text') == self.modeList[0]: # 排版。點擊後改變顏色
             cur_bg_hex = self.boardList[row][column].cget('background')
             next_bg_hex = BoardColor.NextHex(cur_bg_hex)
 
             self.boardList[row][column].config(bg = next_bg_hex)
+            self.resultboardList[row][column].config(bg = next_bg_hex)
             self.calculate()
+        # else: do nothing # 訓練。點擊後畫出路徑
 
     def show(self):
         self.window.mainloop()
