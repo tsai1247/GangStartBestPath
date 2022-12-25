@@ -58,11 +58,11 @@ class Window():
             for j in range(COLUMN):
                 item = tk.Button(
                     self.frame_result_board, 
-                    name=f'item {i} {j}', text=f'({i}, {j})', 
+                    name=f'item {i} {j}', # text=f'({i}, {j})', 
                     width=button_size, height=button_size//2,
                     font=font_board_index,
                     borderwidth=0.5,
-                    command=lambda row=i, column = j: self.change_item_color(row, column)
+                    # command=lambda row=i, column = j: self.change_item_color(row, column)
                 )
 
                 item.grid(row=i, column=j)
@@ -105,26 +105,6 @@ class Window():
 
 
         # score
-        ## 總分
-        self.label_score_title = tk.Label(
-            self.frame_result, text='版面總分：', 
-            font=font_setting_title
-        )
-        self.label_score_title.grid(row=0, column=0, sticky='W')
-        
-        self.label_totalscore = tk.Label(
-            self.frame_result, text='0', 
-            font=font_setting_content
-        )
-        self.label_totalscore.grid(row=0, column=1)
-
-        self.button_calculatescore = tk.Button(
-            self.frame_result, text='重新計算', 
-            font=font_setting_button,
-            command=self.calculate
-        )
-        self.button_calculatescore.grid(row=0, column=2, columnspan=4, padx=5, sticky='W')
-
         ## Combo
         self.label_combo_title = tk.Label(
             self.frame_result, text='Combo: ', 
@@ -232,6 +212,37 @@ class Window():
         )
         self.label_target_score.grid(row=6, column=2, columnspan=2, padx=10)
 
+        # path
+        self.path_frame_list: list[list[list[tk.Frame]]] = [[[] for i in range(6)] for j in range(5)]
+        path_board_startX = 430
+        path_board_startY = 150
+        path_board_length = 32
+        path_board_distance_X = 28.5
+        path_board_distance_Y = 27
+        path_board_square_size = 50
+        path_board_width = 5
+        for i in range(COLUMN):
+            for j in range(ROW):
+                # up
+                pt = tk.Frame(self.window, height=path_board_length, width=path_board_width)
+                pt.place(x=-100, y=-100)
+                self.path_frame_list[j][i].append(pt)
+
+                # down
+                pt = tk.Frame(self.window, height=path_board_length, width=path_board_width)
+                pt.place(x=-100, y=-100)
+                self.path_frame_list[j][i].append(pt)
+
+                # left 
+                pt = tk.Frame(self.window, height=path_board_width, width=path_board_length)
+                pt.place(x=-100, y=-100)
+                self.path_frame_list[j][i].append(pt)
+
+                # right 
+                pt = tk.Frame(self.window, height=path_board_width, width=path_board_length)
+                pt.place(x=-100, y=-100)
+                self.path_frame_list[j][i].append(pt)
+
 
 
         # things to do at the end of init
@@ -243,31 +254,83 @@ class Window():
                 self.unselect(i, j)
 
         result = getResult(self.getBoard(origin=True), self.str_iter.get(), self.str_timeout.get(), self.str_target_score.get())
-        for i in range(len(result)):
-            for j in range(len(result[i])):
-                if result[i][j]:
-                    self.select(i, j)
-                else:
-                    self.unselect(i, j)
+        for i in range(len(result.path)):
+            type = 0
+            if i > 0:
+                if result.path[i-1].row == result.path[i].row + 1:
+                    type |= 0x0100
+                elif result.path[i-1].row == result.path[i].row - 1:
+                    type |= 0x1000
+                elif result.path[i-1].column == result.path[i].column + 1:
+                    type |= 0x0001
+                elif result.path[i-1].column == result.path[i].column - 1:
+                    type |= 0x0010
+            if i + 1 != len(result.path):
+                if result.path[i].row == result.path[i+1].row + 1:
+                    type |= 0x1000
+                elif result.path[i].row == result.path[i+1].row - 1:
+                    type |= 0x0100
+                elif result.path[i].column == result.path[i+1].column + 1:
+                    type |= 0x0010
+                elif result.path[i].column == result.path[i+1].column - 1:
+                    type |= 0x0001
+
+            self.select(result.path[i].row, result.path[i].column, type)
         self.calculate()
 
-    def select(self, row, column):
-        if self.isselect(row, column):
-            return
-            
-        self.resultboardList[row][column].config(borderwidth = 3.5, foreground='red')
-        cur_bg_hex = self.resultboardList[row][column].cget('background')
-        next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
-        self.resultboardList[row][column].config(bg = next_bg_hex)
+
+    def select(self, row, column, type = 0x1111):
+        if not self.isselect(row, column):
+            self.resultboardList[row][column].config(borderwidth = 3.5, foreground='red')
+            cur_bg_hex = self.resultboardList[row][column].cget('background')
+            next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
+            self.resultboardList[row][column].config(bg = next_bg_hex)
+
+            path_board_startX = 430
+            path_board_startY = 150
+            path_board_distance_X = 28.5
+            path_board_distance_Y = 27
+            path_board_square_size = 50
+
+        if type & 0x1000:
+            # up
+            pt = self.path_frame_list[row][column][0]
+            pt.config(bg='red')
+            pt.place(   x=path_board_startX + path_board_square_size/2 + column * path_board_distance_X*2, 
+                        y=path_board_startY + row * path_board_distance_Y*2
+                    )
+        if type & 0x0100:
+            # down
+            pt = self.path_frame_list[row][column][1]
+            pt.config(bg='red')
+            pt.place(   x=path_board_startX + path_board_square_size/2 + column * path_board_distance_X*2, 
+                        y=path_board_startY + path_board_square_size/2 + row * path_board_distance_Y*2
+                    )
+        if type & 0x0010:
+            # left 
+            pt = self.path_frame_list[row][column][2]
+            pt.config(bg='red')
+            pt.place(   x=path_board_startX + column * path_board_distance_X*2, 
+                        y=path_board_startY + path_board_square_size/2 + row * path_board_distance_Y*2
+                    )
+        if type & 0x0001:
+            # right 
+            pt = self.path_frame_list[row][column][3]
+            pt.config(bg='red')
+            pt.place(   x=path_board_startX + path_board_square_size/2 + column * path_board_distance_X*2, 
+                        y=path_board_startY + path_board_square_size/2 + row * path_board_distance_Y*2
+                    )
 
     def unselect(self, row, column):
-        if not self.isselect(row, column):
-            return
+        if self.isselect(row, column):
+            self.resultboardList[row][column].config(borderwidth = 0.5, foreground='black')
+            cur_bg_hex = self.resultboardList[row][column].cget('background')
+            next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
+            self.resultboardList[row][column].config(bg = next_bg_hex)
 
-        self.resultboardList[row][column].config(borderwidth = 0.5, foreground='black')
-        cur_bg_hex = self.resultboardList[row][column].cget('background')
-        next_bg_hex = BoardColor.NextHex(cur_bg_hex, 2)
-        self.resultboardList[row][column].config(bg = next_bg_hex)
+        for type in range(4):
+            pt = self.path_frame_list[row][column][type]
+            pt.place(   x = -100, y = -100)
 
     def isselect(self, row, column):
         return float(self.resultboardList[row][column].cget("borderwidth")) > 1
@@ -287,6 +350,7 @@ class Window():
                     foreground='black',
                     borderwidth=0.5
                 )
+                self.unselect(i, j)
         self.calculate()
 
     def getSelected(self):
@@ -298,8 +362,8 @@ class Window():
         selected = self.getSelected()
         
         path_cnt = getPathLength(selected)
-        combolist = getCombo(board)
-        cntnumlist = getMatchedNum(board)
+        combolist = getCombo(board, selected)
+        cntnumlist = getMatchedNum(board, selected)
 
         totalcombo = sum(combolist)
         totalcntnum = sum(cntnumlist)

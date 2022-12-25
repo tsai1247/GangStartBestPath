@@ -140,7 +140,7 @@ def getIndividual():
     ret = Path.random()
     return ret
 
-def getResult(board: list[list[str]], termination_criterion = 3000, timeout = 100, termination_score = 15) -> list[list[bool]]:
+def getResult(board: list[list[str]], termination_criterion = 3000, timeout = 100, termination_score = 15) -> Path:
     def parent_selection():
         total_score = sum(parent_fitness)
         num = random.randint(0, total_score)
@@ -290,7 +290,7 @@ def getResult(board: list[list[str]], termination_criterion = 3000, timeout = 10
         for i in range(len(parent)):
             if parent_fitness[i] >= termination_score:
                 print('\tnew score:', parent_fitness[i], 'iter', generation_count)
-                return parent[i].getBoard()
+                return parent[i]
                 
             if parent_fitness[i] > current_max_score:
                 current_max_score = parent_fitness[i]
@@ -310,4 +310,4 @@ def getResult(board: list[list[str]], termination_criterion = 3000, timeout = 10
         if parent_fitness[i] > parent_fitness[bestindex]:
             bestindex = i
     # return parent[bestindex].getBoard()
-    return bestofall.getBoard()
+    return bestofall
